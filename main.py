@@ -24,9 +24,7 @@ class FunctionInputs(AutomateBase):
     https://docs.pydantic.dev/latest/usage/models/
     """
 
-    speckle_token: SecretStr = Field(
-        title="This is a secret message", default=SecretStr("")
-    )
+    speckle_token: SecretStr = Field(title="Speckle token", default=SecretStr(""))
 
 
 def automate_function(
@@ -46,7 +44,9 @@ def automate_function(
     version_root_object = automate_context.receive_version()
 
     speckle_client = SpeckleClient()
-    speckle_client.authenticate_with_token(function_inputs.speckle_token)
+    speckle_client.authenticate_with_token(
+        function_inputs.speckle_token.get_secret_value()
+    )
 
     workspace_id: str = speckle_client.project.get(
         automate_context.automation_run_data.project_id
