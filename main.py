@@ -12,7 +12,7 @@ from speckle_automate import (
 )
 
 from specklepy.core.api.models.current import Project
-from utils import create_new_version_in_other_project, get_projects_from_client
+from utils import create_new_version_in_other_project, get_filtered_projects
 
 
 class FunctionInputs(AutomateBase):
@@ -54,11 +54,16 @@ def automate_function(
         automate_context.automation_run_data.project_id
     ).workspaceId
 
-    projects: List[Project] = get_projects_from_client(automate_context, workspace_id)
-    print(projects)
+    model_name = automate_context.speckle_client.model.get(
+        automate_context.automation_run_data.triggers[0].payload.model_id,
+        automate_context.automation_run_data.project_id,
+    ).name
+
+    projects: List[Project] = get_filtered_projects(automate_context, workspace_id)
+
     for project in projects:
         create_new_version_in_other_project(
-            automate_context, version_root_object, project.id, "cad data"
+            automate_context, version_root_object, project.id, model_name
         )
 
     automate_context.mark_run_success(

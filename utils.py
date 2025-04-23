@@ -14,7 +14,7 @@ from specklepy.core.api.models.current import Project
 from specklepy.transports.server.server import ServerTransport
 
 
-def get_projects_from_client(automate_context, workspace_id: str) -> List[str]:
+def get_filtered_projects(automate_context, workspace_id: str) -> List[str]:
 
     filtered_projects = []
     projects: List[Project] = (
@@ -28,6 +28,7 @@ def get_projects_from_client(automate_context, workspace_id: str) -> List[str]:
             if (
                 project.workspaceId == workspace_id
                 and project.updatedAt >= one_hour_before_now
+                and project.id != automate_context.automation_run_data.project_id
             ):
                 filtered_projects.append(project)
 
@@ -48,9 +49,6 @@ def create_new_version_in_other_project(
         model_id (str): For now please use a `branchName`!
         version_message (str): The message for the new version.
     """
-    if project_id == automate_context.automation_run_data.project_id:
-        # don't do anything for the same project
-        return
 
     branch = automate_context.speckle_client.branch.get(project_id, model_name, 1)
     model_id = ""
@@ -91,9 +89,6 @@ def create_new_version_in_other_project(
         [transport],
         use_default_cache=False,
     )
-    print("_________________________________________________________________")
-    print(root_object_id)
-    print(automate_context.speckle_client)
 
     version_id = automate_context.speckle_client.version.create(
         CreateVersionInput(

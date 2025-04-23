@@ -1,29 +1,6 @@
 # Speckle Automate function template - Python
 
-This template repository is for a Speckle Automate function written in Python
-using the [specklepy](https://pypi.org/project/specklepy/) SDK to interact with Speckle data.
-
-This template contains the full scaffolding required to publish a function to the Automate environment.
-It also has some sane defaults for development environment setups.
-
-## Getting started
-
-1. Use this template repository to create a new repository in your own / organization's profile.
-
-Register the function 
-
-### Add new dependencies
-
-To add new Python package dependencies to the project, use the following:
-`$ poetry add pandas`
-
-### Change launch variables
-
-Describe how the launch.json should be edited.
-
-### Github Codespaces
-
-Create a new repo from this template, and use the create new code.
+This function allows to share the model to 
 
 ### Using this Speckle Function
 
