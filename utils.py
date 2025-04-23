@@ -42,13 +42,6 @@ def create_new_version_in_other_project(
     model_name: str,
     version_message: str = "",
 ) -> None:
-    """Save a base model to a new version on the project.
-
-    Args:
-        root_object (Base): The Speckle base object for the new version.
-        model_id (str): For now please use a `branchName`!
-        version_message (str): The message for the new version.
-    """
 
     branch = automate_context.speckle_client.branch.get(project_id, model_name, 1)
     model_id = ""

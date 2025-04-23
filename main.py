@@ -59,7 +59,7 @@ def automate_function(
         )
 
     automate_context.mark_run_success(
-        f"Model successfully shared to {len(projects)} projects."
+        f"Model successfully shared to {len(projects)} projects in the workspace {workspace_id}. All Projects: {[x.name for x in automate_context.speckle_client.active_user.get_projects().items]}"
     )
 
     # If the function generates file results, this is how it can be
