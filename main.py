@@ -3,6 +3,7 @@
 Use the automation_context module to wrap your function in an Automate context helper.
 """
 
+from typing import List
 from pydantic import Field, SecretStr
 from speckle_automate import (
     AutomateBase,
@@ -10,7 +11,8 @@ from speckle_automate import (
     execute_automate_function,
 )
 
-from flatten import flatten_base
+from specklepy.core.api.models.current import Project
+from utils import create_new_version_in_other_project, get_projects_from_client
 
 
 class FunctionInputs(AutomateBase):
@@ -48,34 +50,20 @@ def automate_function(
     # The context provides a convenient way to receive the triggering version.
     version_root_object = automate_context.receive_version()
 
-    objects_with_forbidden_speckle_type = [
-        b
-        for b in flatten_base(version_root_object)
-        if b.speckle_type == function_inputs.forbidden_speckle_type
-    ]
-    count = len(objects_with_forbidden_speckle_type)
+    workspace_id: str = automate_context.speckle_client.project.get(
+        automate_context.automation_run_data.project_id
+    ).workspaceId
 
-    if count > 0:
-        # This is how a run is marked with a failure cause.
-        automate_context.attach_error_to_objects(
-            category="Forbidden speckle_type"
-            f" ({function_inputs.forbidden_speckle_type})",
-            object_ids=[o.id for o in objects_with_forbidden_speckle_type if o.id],
-            message="This project should not contain the type: "
-            f"{function_inputs.forbidden_speckle_type}",
-        )
-        automate_context.mark_run_failed(
-            "Automation failed: "
-            f"Found {count} object that have one of the forbidden speckle types: "
-            f"{function_inputs.forbidden_speckle_type}"
+    projects: List[Project] = get_projects_from_client(automate_context, workspace_id)
+    print(projects)
+    for project in projects:
+        create_new_version_in_other_project(
+            automate_context, version_root_object, project.id, "cad data"
         )
 
-        # Set the automation context view to the original model/version view
-        # to show the offending objects.
-        automate_context.set_context_view()
-
-    else:
-        automate_context.mark_run_success("No forbidden types found.")
+    automate_context.mark_run_success(
+        f"Model successfully shared to {len(projects)} projects."
+    )
 
     # If the function generates file results, this is how it can be
     # attached to the Speckle project/model
