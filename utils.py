@@ -10,16 +10,17 @@ from specklepy.objects.base import Base
 from typing import List
 
 from specklepy.core.api.inputs.version_inputs import CreateVersionInput
+from specklepy.api.client import SpeckleClient
 from specklepy.core.api.models.current import Project
 from specklepy.transports.server.server import ServerTransport
 
 
-def get_filtered_projects(automate_context, workspace_id: str) -> List[str]:
+def get_filtered_projects(
+    automate_context, speckle_client: SpeckleClient, workspace_id: str
+) -> List[str]:
 
     filtered_projects = []
-    projects: List[Project] = (
-        automate_context.speckle_client.active_user.get_projects().items
-    )
+    projects: List[Project] = speckle_client.active_user.get_projects().items
 
     for project in projects:
         if isinstance(project, Project):
@@ -36,14 +37,15 @@ def get_filtered_projects(automate_context, workspace_id: str) -> List[str]:
 
 
 def create_new_version_in_other_project(
-    automate_context: "AutomationContext",
+    automate_context,
+    speckle_client: SpeckleClient,
     root_object: Base,
     project_id: str,
     model_name: str,
     version_message: str = "",
 ) -> None:
 
-    branch = automate_context.speckle_client.branch.get(project_id, model_name, 1)
+    branch = speckle_client.branch.get(project_id, model_name, 1)
     model_id = ""
     if isinstance(branch, Branch):
         if not branch.id:
@@ -63,7 +65,7 @@ def create_new_version_in_other_project(
 
     else:
         # we just check if it exists
-        branch_create = automate_context.speckle_client.branch.create(
+        branch_create = speckle_client.branch.create(
             project_id,
             model_name,
         )
@@ -72,8 +74,8 @@ def create_new_version_in_other_project(
         model_id = branch_create
 
     transport = ServerTransport(
-        client=automate_context.speckle_client,
-        account=automate_context.speckle_client.account,
+        client=speckle_client,
+        account=speckle_client.account,
         stream_id=project_id,
     )
 
@@ -83,7 +85,7 @@ def create_new_version_in_other_project(
         use_default_cache=False,
     )
 
-    version_id = automate_context.speckle_client.version.create(
+    version_id = speckle_client.version.create(
         CreateVersionInput(
             projectId=project_id,
             objectId=root_object_id,
@@ -95,5 +97,3 @@ def create_new_version_in_other_project(
 
     if isinstance(version_id, SpeckleException):
         raise version_id
-
-    automate_context._automation_result.result_versions.append(version_id)

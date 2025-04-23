@@ -12,6 +12,7 @@ from speckle_automate import (
 )
 
 from specklepy.core.api.models.current import Project
+from specklepy.api.client import SpeckleClient
 from utils import create_new_version_in_other_project, get_filtered_projects
 
 
@@ -23,7 +24,9 @@ class FunctionInputs(AutomateBase):
     https://docs.pydantic.dev/latest/usage/models/
     """
 
-    pass
+    speckle_token: SecretStr = Field(
+        title="This is a secret message", default=SecretStr("")
+    )
 
 
 def automate_function(
@@ -42,20 +45,29 @@ def automate_function(
     # The context provides a convenient way to receive the triggering version.
     version_root_object = automate_context.receive_version()
 
-    workspace_id: str = automate_context.speckle_client.project.get(
+    speckle_client = SpeckleClient()
+    speckle_client.authenticate_with_token(function_inputs.speckle_token)
+
+    workspace_id: str = speckle_client.project.get(
         automate_context.automation_run_data.project_id
     ).workspaceId
 
-    model_name = automate_context.speckle_client.model.get(
+    model_name = speckle_client.model.get(
         automate_context.automation_run_data.triggers[0].payload.model_id,
         automate_context.automation_run_data.project_id,
     ).name
 
-    projects: List[Project] = get_filtered_projects(automate_context, workspace_id)
+    projects: List[Project] = get_filtered_projects(
+        automate_context, speckle_client, workspace_id
+    )
 
     for project in projects:
         create_new_version_in_other_project(
-            automate_context, version_root_object, project.id, model_name
+            automate_context,
+            speckle_client,
+            version_root_object,
+            project.id,
+            model_name,
         )
 
     automate_context.mark_run_success(
