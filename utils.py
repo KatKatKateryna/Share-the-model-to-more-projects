@@ -1,17 +1,15 @@
-from typing import List
-
-from specklepy.api import operations
+from typing import List, Optional
 
 from datetime import datetime, timedelta, timezone
 
-from specklepy.core.api.models import Branch
-from specklepy.logging.exceptions import SpeckleException
-from specklepy.objects.base import Base
-from typing import List
-
+from gql import gql
+from specklepy.api import operations
+from specklepy.core.api.client import SpeckleClient
 from specklepy.core.api.inputs.version_inputs import CreateVersionInput
-from specklepy.api.client import SpeckleClient
-from specklepy.core.api.models.current import Project
+from specklepy.core.api.models import Branch, Project, ResourceCollection
+from specklepy.core.api.responses import DataResponse
+from specklepy.logging.exceptions import GraphQLException, SpeckleException
+from specklepy.objects.base import Base
 from specklepy.transports.server.server import ServerTransport
 
 
@@ -20,7 +18,7 @@ def get_filtered_projects(
 ) -> List[str]:
 
     filtered_projects = []
-    projects: List[Project] = speckle_client.active_user.get_projects().items
+    projects = get_projects_from_workspace(speckle_client, workspace_id)
 
     for project in projects:
         if isinstance(project, Project):
@@ -97,3 +95,52 @@ def create_new_version_in_other_project(
 
     if isinstance(version_id, SpeckleException):
         raise version_id
+
+
+def get_projects_from_workspace(
+    speckle_client: SpeckleClient, workspace_id: str
+) -> ResourceCollection[Project]:
+
+    QUERY = gql(
+        """
+        query Workspace($id: String!) {
+            data:workspace (id: $id){
+                    data:projects
+                    {
+                        totalCount
+                        cursor
+                        items
+                        {
+                            id
+                            name
+                            sourceApps
+                            allowPublicComments
+                            createdAt
+                            description
+                            role
+                            updatedAt
+                            visibility
+                            workspaceId
+                        }
+                    }
+            }
+        }
+        """
+    )
+
+    variables = {
+        "id": workspace_id,
+    }
+
+    response = speckle_client.active_user.make_request_and_parse_response(
+        DataResponse[Optional[DataResponse[ResourceCollection[Project]]]],
+        QUERY,
+        variables,
+    )
+
+    if response.data is None:
+        raise GraphQLException(
+            "GraphQL response indicated that the ActiveUser could not be found"
+        )
+
+    return response.data.data.items

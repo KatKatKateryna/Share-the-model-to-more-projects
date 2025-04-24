@@ -24,7 +24,10 @@ class FunctionInputs(AutomateBase):
     https://docs.pydantic.dev/latest/usage/models/
     """
 
-    speckle_token: SecretStr = Field(title="Speckle token", default=SecretStr(""))
+    speckle_token: SecretStr = Field(
+        title="Speckle token",
+        default=SecretStr(""),
+    )
 
 
 def automate_function(
@@ -71,7 +74,7 @@ def automate_function(
         )
 
     automate_context.mark_run_success(
-        f"Model successfully shared to {len(projects)} projects in the workspace {workspace_id}. All Projects: {[x.name for x in automate_context.speckle_client.active_user.get_projects().items]}"
+        f"Model successfully shared to {len(projects)} projects in the workspace {workspace_id}. All Projects: {[x.name for x in projects]}"
     )
 
     # If the function generates file results, this is how it can be
